@@ -1,6 +1,7 @@
 Under development
 =======================
 - [feature] Search data files in parent dir too (alexeevdv)
+- [feature] Use separate classes for platform dependent code on each platform (alexeevdv)
 
 0.3.1 (2018-01-14)
 =======================

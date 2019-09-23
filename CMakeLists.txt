@@ -23,8 +23,7 @@ set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose the type of build (by default 
 cmake_minimum_required(VERSION 3.1)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake/modules)
 
-project(falltergeist)
-set(falltergeist_VERSION  0.3.1)
+project(falltergeist VERSION 0.4.0)
 
 include_directories(src)
 
@@ -88,6 +87,12 @@ if(MSVC)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 endif()
 
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/data DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+configure_file (
+	"${PROJECT_SOURCE_DIR}/src/Version.h.in"
+	"${PROJECT_BINARY_DIR}/src/Version.h"
+)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/src)
 add_executable(falltergeist main.cpp ${SOURCES} ${_additional_includes})
 
 set_target_properties(falltergeist PROPERTIES
