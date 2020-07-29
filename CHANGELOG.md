@@ -20,6 +20,7 @@ Under development
 - [feature] Added missing logo in the Pipboy window and special date greetings (JanSimek)
 - [feature] Added ladders and stairs funtionality (667bdrm)
 - [feature] Added elevators support (667bdrm)
+- [bugfix] Fix crash on vctydwtn and modinn maps when calling removeObjectFromMap (667bdrm)
 
 0.3.1 (2018-01-14)
 =======================

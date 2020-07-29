@@ -1040,14 +1040,23 @@ namespace Falltergeist
 
         void Location::removeObjectFromMap(Game::Object *object)
         {
-            auto objectsAtHex = object->hexagon()->objects();
+            auto hexagon = object->hexagon();
 
-            for (auto it = objectsAtHex->begin(); it != objectsAtHex->end(); ++it) {
-                if (*it == object) {
-                    objectsAtHex->erase(it);
-                    break;
+            if (hexagon != nullptr) {
+                auto objectsAtHex = hexagon->objects();
+
+                for (auto it = objectsAtHex->begin(); it != objectsAtHex->end(); ++it) {
+                    if (*it == object) {
+                        objectsAtHex->erase(it);
+                        break;
+                    }
                 }
+            } else {
+                auto &warning =  Logger::warning("LOCATION");
+                warning << "removeObjectFromMap(): object->hexagon() == nullptr for PID = ";
+                warning << object->PID() << " (" << object->name() << ")" << std::endl;
             }
+
             if (_objectUnderCursor == object) {
                 _objectUnderCursor = nullptr;
             }
