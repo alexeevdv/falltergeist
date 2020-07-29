@@ -180,7 +180,7 @@ namespace Falltergeist
             elevation->floor()->init();
             elevation->roof()->init();
 
-            //loadAmbient(name);
+            //loadAmbient(_location->name());
 
             initLight();
 

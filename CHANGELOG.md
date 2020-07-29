@@ -20,6 +20,11 @@ Under development
 - [feature] Added missing logo in the Pipboy window and special date greetings (JanSimek)
 - [feature] Added ladders and stairs funtionality (667bdrm)
 - [feature] Added elevators support (667bdrm)
+- [bugfix] Now toggling cursor from hand to arrow on right click when mouse over any element as in vanilla engine (667bdrm)
+- [bugfix] Allow dragging items only when the cursor set to hand as in vanilla engine (667bdrm)
+- [feature] Support action dropdown on left click on the inventory item (667bdrm)
+- [feature] Showing inventory item description on player panel on action look cursor (667bdrm)
+- [feature] Basic UI::Panel implementation (667bdrm)
 
 0.3.1 (2018-01-14)
 =======================

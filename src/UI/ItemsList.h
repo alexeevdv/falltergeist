@@ -43,7 +43,9 @@ namespace Falltergeist
 
                 virtual void render(bool eggTransparency = false) override;
 
+                void onMouseDown(Event::Mouse* event);
                 void onMouseLeftDown(Event::Mouse* event);
+                void onMouseRightDown(Event::Mouse* event);
                 void onMouseDragStart(Event::Mouse* event);
                 void onMouseDrag(Event::Mouse* event);
                 void onMouseDragStop(Event::Mouse* event);

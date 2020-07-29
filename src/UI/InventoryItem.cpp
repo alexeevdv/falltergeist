@@ -8,8 +8,11 @@
 #include "../Graphics/Rect.h"
 #include "../Graphics/Renderer.h"
 #include "../Input/Mouse.h"
+#include "../State/CursorDropdown.h"
+#include "../State/Inventory.h"
 #include "../UI/InventoryItem.h"
 #include "../UI/ItemsList.h"
+#include "../UI/ResourceManager.h"
 
 namespace Falltergeist
 {
@@ -19,8 +22,9 @@ namespace Falltergeist
 
         InventoryItem::InventoryItem(Game::ItemObject *item, const Point& pos) : Falltergeist::UI::Base(pos)
         {
+            resourceManager = std::make_shared<UI::ResourceManager>();
             _item = item;
-            mouseDownHandler().add(std::bind(&InventoryItem::onMouseLeftDown, this, std::placeholders::_1));
+            mouseDownHandler().add(std::bind(&InventoryItem::onMouseDown, this, std::placeholders::_1));
             mouseDragStartHandler().add(std::bind(&InventoryItem::onMouseDragStart, this, std::placeholders::_1));
             mouseDragHandler().add(std::bind(&InventoryItem::onMouseDrag, this, std::placeholders::_1));
             mouseDragStopHandler().add(std::bind(&InventoryItem::onMouseDragStop, this, std::placeholders::_1));
@@ -112,35 +116,64 @@ namespace Falltergeist
             _item = item;
         }
 
+        void InventoryItem::onMouseDown(Event::Mouse* event)
+        {
+            if (event->leftButton()) {
+                onMouseLeftDown(event);
+            }
+
+            if (event->rightButton()) {
+                onMouseRightDown(event);
+            }
+        }
+
         void InventoryItem::onMouseLeftDown(Event::Mouse* event)
+        {
+            auto mouseState = Game::Game::getInstance()->mouse()->state();
+            if (mouseState == Input::Mouse::Cursor::ACTION) {
+                auto inventory = dynamic_cast<State::Inventory *>(Game::Game::getInstance()->topState(0));
+                inventory->_item = _item;
+                inventory->_actionCursorTimer.start();
+                inventory->_actionCursorButtonPressed = true;
+            }
+        }
+
+        void InventoryItem::onMouseRightDown(Event::Mouse* event)
         {
         }
 
         void InventoryItem::onMouseDragStart(Event::Mouse* event)
         {
-            Game::Game::getInstance()->mouse()->pushState(Input::Mouse::Cursor::NONE);
-            Game::Game::getInstance()->mixer()->playACMSound("sound/sfx/ipickup1.acm");
-            _oldType = type();
-            setType(Type::DRAG);
-            setOffset((event->position() - _position) - size() / 2);
+            auto mouseState = Game::Game::getInstance()->mouse()->state();
+            if (mouseState == Input::Mouse::Cursor::HAND) {
+                Game::Game::getInstance()->mouse()->pushState(Input::Mouse::Cursor::NONE);
+                Game::Game::getInstance()->mixer()->playACMSound("sound/sfx/ipickup1.acm");
+                _oldType = type();
+                setType(Type::DRAG);
+                setOffset((event->position() - _position) - size() / 2);
+            }
         }
 
         void InventoryItem::onMouseDrag(Event::Mouse* event)
         {
-            setOffset(offset() + event->offset());
+            if (type() == Type::DRAG) {
+                setOffset(offset() + event->offset());
+            }
         }
 
         void InventoryItem::onMouseDragStop(Event::Mouse* event)
         {
-            Game::Game::getInstance()->mouse()->popState();
-            Game::Game::getInstance()->mixer()->playACMSound("sound/sfx/iputdown.acm");
-            setOffset({0, 0});
-            setType(_oldType);
+            if (type() == Type::DRAG) {
+                Game::Game::getInstance()->mouse()->popState();
+                Game::Game::getInstance()->mixer()->playACMSound("sound/sfx/iputdown.acm");
+                setOffset({0, 0});
+                setType(_oldType);
 
-            auto itemevent = std::make_unique<Event::Mouse>(*event, "itemdragstop");
-            itemevent->setPosition(event->position());
-            itemevent->setTarget(this);
-            emitEvent(std::move(itemevent), itemDragStopHandler());
+                auto itemevent = std::make_unique<Event::Mouse>(*event, "itemdragstop");
+                itemevent->setPosition(event->position());
+                itemevent->setTarget(this);
+                emitEvent(std::move(itemevent), itemDragStopHandler());
+            }
         }
 
         void InventoryItem::onArmorDragStop(Event::Mouse* event)

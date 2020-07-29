@@ -1,6 +1,8 @@
 #pragma once
 
 #include "../Format/Enums.h"
+#include "../Game/Timer.h"
+#include "../Input/Mouse.h"
 #include "../UI/Base.h"
 
 namespace Falltergeist
@@ -39,7 +41,9 @@ namespace Falltergeist
 
                 virtual bool opaque(const Point &pos) override;
 
+                void onMouseDown(Event::Mouse* event);
                 void onMouseLeftDown(Event::Mouse* event);
+                void onMouseRightDown(Event::Mouse* event);
                 void onMouseDragStart(Event::Mouse* event);
                 void onMouseDrag(Event::Mouse* event);
                 void onMouseDragStop(Event::Mouse* event);
@@ -53,6 +57,7 @@ namespace Falltergeist
                 Game::ItemObject* _item = nullptr;
                 Type _type = Type::INVENTORY;
                 Type _oldType = Type::INVENTORY;
+                std::shared_ptr<UI::IResourceManager> resourceManager;
 
                 Event::MouseHandler _itemDragStopHandler;
         };

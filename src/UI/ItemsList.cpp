@@ -20,7 +20,7 @@ namespace Falltergeist
 
         ItemsList::ItemsList(const Point& pos) : Falltergeist::UI::Base(pos)
         {
-            mouseDownHandler().add( std::bind(&ItemsList::onMouseLeftDown, this, std::placeholders::_1));
+            mouseDownHandler().add( std::bind(&ItemsList::onMouseDown, this, std::placeholders::_1));
             mouseDragStartHandler().add(std::bind(&ItemsList::onMouseDragStart, this, std::placeholders::_1));
             mouseDragHandler().add(     std::bind(&ItemsList::onMouseDrag, this, std::placeholders::_1));
             mouseDragStopHandler().add( std::bind(&ItemsList::onMouseDragStop, this, std::placeholders::_1));
@@ -68,14 +68,36 @@ namespace Falltergeist
             return _inventoryItems;
         }
 
+        void ItemsList::onMouseDown(Event::Mouse* event)
+        {
+            if (event->leftButton()) {
+                onMouseLeftDown(event);
+            }
+
+            if (event->rightButton()) {
+                onMouseRightDown(event);
+            }
+        }
+
         void ItemsList::onMouseLeftDown(Event::Mouse* event)
+        {
+            unsigned int index = (event->position().y() - y())/_slotHeight;
+            auto clickedItem = _inventoryItems.at(index).get();
+            if (clickedItem) {
+                clickedItem->onMouseLeftDown(event);
+            }
+        }
+
+        void ItemsList::onMouseRightDown(Event::Mouse* event)
         {
         }
 
         void ItemsList::onMouseDragStart(Event::Mouse* event)
         {
             unsigned int index = (event->position().y() - y())/_slotHeight;
-            if (index < _inventoryItems.size()) {
+            auto mouseState = Game::Game::getInstance()->mouse()->state();
+
+            if (index < _inventoryItems.size() && (mouseState == Input::Mouse::Cursor::HAND || mouseState == Input::Mouse::Cursor::BIG_ARROW)) {
                 Game::Game::getInstance()->mouse()->pushState(Input::Mouse::Cursor::NONE);
                 Game::Game::getInstance()->mixer()->playACMSound("sound/sfx/ipickup1.acm");
                 _draggedItem = _inventoryItems.at(index).get();

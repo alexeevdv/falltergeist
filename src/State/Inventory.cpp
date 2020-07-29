@@ -20,6 +20,7 @@
 #include "../State/GameMenu.h"
 #include "../State/InventoryDragItem.h"
 #include "../State/Location.h"
+#include "../State/CursorDropdown.h"
 #include "../UI/Animation.h"
 #include "../UI/Factory/ImageButtonFactory.h"
 #include "../UI/Image.h"
@@ -30,6 +31,7 @@
 #include "../UI/PlayerPanel.h"
 #include "../UI/Rectangle.h"
 #include "../UI/TextArea.h"
+#include "../UI/Panel.h"
 
 namespace Falltergeist
 {
@@ -60,6 +62,37 @@ namespace Falltergeist
             if (_initialized) return;
             State::init();
 
+            _mouseDownHandler.add(std::bind(&Inventory::onMouseDown, this, std::placeholders::_1));
+
+            // action cursor stuff
+            _actionCursorTimer.setInterval((unsigned) 350);
+            _actionCursorTimer.tickHandler().add([this](Event::Event *) {
+                if (!_item) {
+                    return;
+                }
+
+                if (_actionCursorButtonPressed || Game::Game::getInstance()->mouse()->state() == Input::Mouse::Cursor::ACTION) {
+                    if (!_actionCursorButtonPressed && (_actionCursorLastItem != _item)) {
+                        _item->look_at_p_proc();
+                        _actionCursorLastItem = _item;
+                    }
+                    auto icons = getCursorIconsForItem(_item);
+                    if (!icons.empty()) {
+                        auto inventory = dynamic_cast<Inventory *>(Game::Game::getInstance()->topState(0));
+                        inventory->_screenShow(_item->PID());
+                        // TODO delegate state manipulation to some kind of state manager
+                        if (dynamic_cast<CursorDropdown *>(Game::Game::getInstance()->topState()) != nullptr) {
+                            Game::Game::getInstance()->popState();
+                        }
+
+                        auto state = new CursorDropdown(resourceManager, std::move(icons), !_actionCursorButtonPressed);
+                        state->setObject(_item);
+                        Game::Game::getInstance()->pushState(state);
+                    }
+                }
+                _actionCursorButtonPressed = false;
+            });
+
             setModal(true);
             setFullscreen(false);
 
@@ -67,6 +100,8 @@ namespace Falltergeist
             auto panelHeight = Game::Game::getInstance()->locationState()->playerPanel()->size().height();
 
             setPosition((game->renderer()->size() - Point(499, 377 + panelHeight)) / 2); // 499x377 = art/intrface/invbox.frm
+
+            statsPanel = new UI::Panel(position() + Point(300, 47));
 
             addUI("background", resourceManager->getImage("art/intrface/invbox.frm"));
             getUI("background")->mouseClickHandler().add(std::bind(&Inventory::backgroundRightClick, this, std::placeholders::_1));
@@ -86,12 +121,11 @@ namespace Falltergeist
             getUI("button_down")->mouseClickHandler().add(std::bind(&Inventory::onScrollDownButtonClick, this, std::placeholders::_1));
 
             // screen
-            auto screenX = 300;
-            auto screenY = 47;
-
+            auto screenX = 0;
+            auto screenY = 0;
             auto player = Game::Game::getInstance()->player();
 
-            addUI("player_name", new UI::TextArea(player->name(), screenX, screenY));
+            statsPanel->addUI("player_name", new UI::TextArea(player->name(), Point(screenX, screenY)));
 
             auto line1 = new UI::Rectangle(Point(screenX, screenY+16), Graphics::Size(142, 1), {0x3f, 0xf8, 0x00, 0xff} );
 
@@ -100,14 +134,14 @@ namespace Falltergeist
             {
                 statsLabels += _t(MSG_INVENTORY, i) + "\n";
             }
-            addUI("label_stats", new UI::TextArea(statsLabels, screenX, screenY + 10*2));
+            statsPanel->addUI("label_stats", new UI::TextArea(statsLabels, screenX, screenY + 10*2));
 
             std::string statsValues;
             for (unsigned i = (unsigned)STAT::STRENGTH; i <= (unsigned)STAT::LUCK; i++)
             {
                 statsValues += std::to_string(player->stat((STAT)i)) + "\n";
             }
-            addUI("label_stats_values", new UI::TextArea(statsValues, screenX + 22, screenY + 20));
+            statsPanel->addUI("label_stats_values", new UI::TextArea(statsValues, screenX + 22, screenY + 20));
 
             std::stringstream ss;
             for (unsigned int i=7; i<14; i++)
@@ -223,20 +257,22 @@ namespace Falltergeist
             screenLabel->setWordWrap(true);
 
 
-            addUI(line1);
-            addUI("textLabel", textLabel);
-            addUI("hitPointsLabel", hitPointsLabel);
-            addUI("armorClassLabel", armorClassLabel);
-            addUI("damageThresholdLabel", damageThresholdLabel);
-            addUI("damageResistanceLabel", damageResistanceLabel);
-            addUI("line2", line2);
-            addUI("line3", line3);
-            addUI("totalWtLabel", totalWtLabel);
-            addUI("weightLabel", weightLabel);
-            addUI("weightMaxLabel", weightMaxLabel);
-            addUI("leftHandLabel", leftHandLabel);
-            addUI("rightHandLabel", rightHandLabel);
-            addUI("screenLabel", screenLabel);
+            statsPanel->addUI(line1);
+            statsPanel->addUI("textLabel", textLabel);
+            statsPanel->addUI("hitPointsLabel", hitPointsLabel);
+            statsPanel->addUI("armorClassLabel", armorClassLabel);
+            statsPanel->addUI("damageThresholdLabel", damageThresholdLabel);
+            statsPanel->addUI("damageResistanceLabel", damageResistanceLabel);
+            statsPanel->addUI("line2", line2);
+            statsPanel->addUI("line3", line3);
+            statsPanel->addUI("totalWtLabel", totalWtLabel);
+            statsPanel->addUI("weightLabel", weightLabel);
+            statsPanel->addUI("weightMaxLabel", weightMaxLabel);
+            statsPanel->addUI("leftHandLabel", leftHandLabel);
+            statsPanel->addUI("rightHandLabel", rightHandLabel);
+            statsPanel->addUI("screenLabel", screenLabel);
+
+            addUI(statsPanel);
 
             auto inventoryList = new UI::ItemsList(Point(40, 40));
             inventoryList->setItems(game->player()->inventory());
@@ -263,6 +299,7 @@ namespace Falltergeist
                 inventoryItem->setType(UI::InventoryItem::Type::SLOT);
                 inventoryItem->itemDragStopHandler().add([inventoryList](Event::Mouse* event){ inventoryList->onItemDragStop(event); });
                 inventoryList->itemDragStopHandler().add([inventoryItem](Event::Mouse* event){ inventoryItem->onArmorDragStop(event); });
+                
                 addUI(inventoryItem);
             }
 
@@ -471,38 +508,28 @@ namespace Falltergeist
 
         void Inventory::backgroundRightClick(Event::Mouse* event)
         {
-            auto mouse = Game::Game::getInstance()->mouse();
-            if (mouse->state() == Input::Mouse::Cursor::ACTION)
-            {
-                mouse->pushState(Input::Mouse::Cursor::HAND);
-            }
-            else
-            {
-                mouse->popState();
-                //state->_screenShow(1);
-            }
             _screenShow(0);
         }
 
         void Inventory::_screenShow (unsigned int PID)
         {
             auto player = Game::Game::getInstance()->player();
-            auto playerNameLabel = getTextArea("player_name");
-            auto statsLabel = getTextArea("label_stats");
-            auto statsValuesLabel = getTextArea("label_stats_values");
-            auto textLabel = getTextArea("textLabel");
-            auto hitPointsLabel = getTextArea("hitPointsLabel");
-            auto armorClassLabel = getTextArea("armorClassLabel");
-            auto damageThresholdLabel = getTextArea("damageThresholdLabel");
-            auto damageResistanceLabel = getTextArea("damageResistanceLabel");
-            auto line2 = getUI("line2");
-            auto line3 = getUI("line3");
-            auto totalWtLabel = getTextArea("totalWtLabel");
-            auto weightLabel = getTextArea("weightLabel");
-            auto weightMaxLabel = getTextArea("weightMaxLabel");
-            auto leftHandLabel = getTextArea("leftHandLabel");
-            auto rightHandLabel = getTextArea("rightHandLabel");
-            auto screenLabel = getTextArea("screenLabel");
+            auto playerNameLabel = statsPanel->getTextArea("player_name");
+            auto statsLabel = statsPanel->getTextArea("label_stats");
+            auto statsValuesLabel = statsPanel->getTextArea("label_stats_values");
+            auto textLabel = statsPanel->getTextArea("textLabel");
+            auto hitPointsLabel = statsPanel->getTextArea("hitPointsLabel");
+            auto armorClassLabel = statsPanel->getTextArea("armorClassLabel");
+            auto damageThresholdLabel = statsPanel->getTextArea("damageThresholdLabel");
+            auto damageResistanceLabel = statsPanel->getTextArea("damageResistanceLabel");
+            auto line2 = statsPanel->getUI("line2");
+            auto line3 = statsPanel->getUI("line3");
+            auto totalWtLabel = statsPanel->getTextArea("totalWtLabel");
+            auto weightLabel = statsPanel->getTextArea("weightLabel");
+            auto weightMaxLabel = statsPanel->getTextArea("weightMaxLabel");
+            auto leftHandLabel = statsPanel->getTextArea("leftHandLabel");
+            auto rightHandLabel = statsPanel->getTextArea("rightHandLabel");
+            auto screenLabel = statsPanel->getTextArea("screenLabel");
 
             if (PID == 0)
             {
@@ -531,6 +558,21 @@ namespace Falltergeist
             rightHandLabel->setVisible(PID == 0);
         }
 
+        void Inventory::handle(Event::Event *event)
+        {
+            State::handle(event);
+            if (auto mouseEvent = dynamic_cast<Event::Mouse *>(event)) {
+                using Mouse = Event::Mouse;
+
+                if (mouseEvent->originalType() == Mouse::Type::BUTTON_DOWN) {
+                    emitEvent(std::make_unique<Event::Mouse>(*mouseEvent), _mouseDownHandler);
+                }
+            }
+            if (event->handled()) {
+                return;
+            }
+        }
+
         void Inventory::onKeyDown(Event::Keyboard* event)
         {
             switch (event->keyCode())
@@ -538,6 +580,44 @@ namespace Falltergeist
                 case SDLK_ESCAPE:
                     Game::Game::getInstance()->popState();
                     break;
+            }
+        }
+
+        void Inventory::onMouseDown(Event::Mouse *event)
+        {
+            if (event->rightButton()) {
+                toggleCursorMode();
+            }
+        }
+
+        void Inventory::onStateDeactivate(Event::State *event)
+        {
+            _actionCursorTimer.stop();
+        }
+
+        std::vector<Input::Mouse::Icon> Inventory::getCursorIconsForItem(Game::ItemObject *item)
+        {
+            std::vector<Input::Mouse::Icon> icons;
+
+            icons.push_back(Input::Mouse::Icon::LOOK);
+            icons.push_back(Input::Mouse::Icon::CANCEL);
+            return icons;
+        }
+
+        void Inventory::think(const float &deltaTime)
+        {
+            _actionCursorTimer.think(deltaTime);
+            State::think(deltaTime);
+        }
+
+        void Inventory::toggleCursorMode()
+        {
+            auto mouseState = Game::Game::getInstance()->mouse()->state();
+
+            if (mouseState == Input::Mouse::Cursor::HAND) {
+                Game::Game::getInstance()->mouse()->popState();
+            } else if (mouseState == Input::Mouse::Cursor::ACTION || mouseState == Input::Mouse::Cursor::ACTION_REVERSE) {
+                Game::Game::getInstance()->mouse()->pushState(Input::Mouse::Cursor::HAND);
             }
         }
     }
