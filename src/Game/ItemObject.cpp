@@ -109,5 +109,15 @@ namespace Falltergeist
         {
             return _subtype;
         }
+
+        void ItemObject::setSoundId(char soundId)
+        {
+            this->_soundId = soundId;
+        }
+
+        char ItemObject::soundId() const
+        {
+            return _soundId;
+        }
     }
 }

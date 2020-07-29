@@ -49,12 +49,17 @@ namespace Falltergeist
                 int inventoryFID() const;
                 void setInventoryFID(int value);
 
+                // item sound ID
+                char soundId() const;
+                void setSoundId(char soundId);
+
                 UI::Base* inventoryUi() const;
                 UI::Base* inventorySlotUi() const;
                 UI::Base* inventoryDragUi() const;
                 std::unique_ptr<UI::TextArea>& inventoryAmountUi();
 
             protected:
+                char _soundId = 0;
                 Subtype _subtype;
                 unsigned int _amount = 1;
                 unsigned int _weight = 0;
