@@ -9,6 +9,7 @@
 #include "../Input/Mouse.h"
 #include "../Logger.h"
 #include "../UI/Animation.h"
+#include "../UI/AnimationQueue.h"
 #include "../UI/Factory/ImageButtonFactory.h"
 #include "../UI/Image.h"
 #include "../UI/ImageButton.h"
@@ -56,6 +57,12 @@ namespace Falltergeist
             auto objectCopy = new Game::Object();
             objectCopy->setFID(object()->FID());
             objectCopy->ui()->setPosition({432, 38});
+
+            if (auto queue = dynamic_cast<UI::AnimationQueue*>(objectCopy->ui())) {
+                auto lastIndex = (int)queue->currentAnimation()->frames().size()  - 1;
+                queue->currentAnimation()->setCurrentFrame(lastIndex);
+            }
+
             addUI(objectCopy->ui());
 
             addUI("button_done", imageButtonFactory->getByType(ImageButtonType::SMALL_RED_CIRCLE, {478, 331}));

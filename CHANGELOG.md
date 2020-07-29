@@ -19,6 +19,7 @@ Under development
 - [feature] New video settings: window position(x,y) and always_on_top flag (adamkewley)
 - [feature] Added missing logo in the Pipboy window and special date greetings (JanSimek)
 - [feature] Added ladders and stairs funtionality (667bdrm)
+- [bugfix] Container displayed opened in container dialog (667bdrm)
 - [feature] Added elevators support (667bdrm)
 
 0.3.1 (2018-01-14)
