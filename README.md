@@ -48,7 +48,7 @@ If using VS2017 or building on Release then use: `compiler.version=15`, or `buil
 
 To be able to download conan SDL2 packages, further configure your conan instance by introducing a new remote:
 ```cmd
-conan remote add bincrafters "https://api.bintray.com/conan/bincrafters/public-conan"
+conan remote add bincrafters https://bincrafters.jfrog.io/artifactory/api/conan/public-conan
 ```
 
 Then open 'Developer PowerShell for Visual Studio' and execute the following commands:
@@ -57,7 +57,7 @@ Then open 'Developer PowerShell for Visual Studio' and execute the following com
 mkdir build
 cd build
 conan install .. --build missing
-cmake .. -G “Visual Studio 16 2019 Win64”
+cmake .. -G "Visual Studio 16 2019" -A x64
 devenv /build Debug falltergeist.sln
 ```
 Or open and build the solution in Visual Studio instead of running the devenv command.
